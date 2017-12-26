@@ -11,26 +11,26 @@ const cellFactory = {
       cell.used = 0;
       cell.color='white';
       return cell;
-    }
-  };
+  }
+};
 
 const allCells = new Array(totalCells).fill().map(i=>cellFactory.create());
 for (let i = 0; i < totalRows; i++)
   allCellsIn2D.push(allCells.slice(i * 10, i * 10 + 10));
 
 const tetrominoFactory = { 
-  shape: function() { 
-    return this.masks[this.clock]
-  },
-
+  shape: function() { return this.masks[this.clock] },
+  binary16 : function() { return ('0000000000000000' +  this.shape().toString(2) ).slice(-16).split('');},
+  array44: function() {return chunkArray(this.binary16(),4)},
+ 
   templates:[
-    { name:'I', masks : [0x4444, 0x0f00, 0x4444, 0x0f00], clock : 0, color : 'aqua'       , r : -4, c: 4, rLast: null, cLast : null },
-    { name:'O', masks : [0x0660, 0x0660, 0x0660, 0x0660], clock : 0, color : 'yellow'     , r : -4, c: 4, rLast: null, cLast : null }, 
-    { name:'T', masks : [0x0E40, 0x4C40, 0x4E00, 0x4640], clock : 0, color : 'purple'     , r : -4, c: 4, rLast: null, cLast : null },
-    { name:'J', masks : [0x2260, 0x08e0, 0x6440, 0x0710], clock : 0, color : 'blue'       , r : -4, c: 4, rLast: null, cLast : null },
-    { name:'L', masks : [0x4460, 0x0e80, 0x6220, 0x02e0], clock : 0, color : 'orange'     , r : -4, c: 4, rLast: null, cLast : null },
-    { name:'S', masks : [0x0360, 0x2310, 0x0360, 0x2310], clock : 0, color : 'lawngreen'  , r : -4, c: 4, rLast: null, cLast : null },
-    { name:'Z', masks : [0x0c60, 0x2640, 0x0c60, 0x2640], clock : 0, color : 'red'        , r : -4, c: 4, rLast: null, cLast : null }],
+    { name:'I', masks : [0x4444, 0x0f00, 0x4444, 0x0f00], clock : 0, color : 'aqua'       , r : -3, c: 4, rLast: null, cLast : null },
+    { name:'O', masks : [0x0660, 0x0660, 0x0660, 0x0660], clock : 0, color : 'yellow'     , r : -2, c: 4, rLast: null, cLast : null }, 
+    { name:'T', masks : [0x0E40, 0x4C40, 0x4E00, 0x4640], clock : 0, color : 'purple'     , r : -2, c: 4, rLast: null, cLast : null },
+    { name:'J', masks : [0x2260, 0x08e0, 0x6440, 0x0710], clock : 0, color : 'blue'       , r : -2, c: 4, rLast: null, cLast : null },
+    { name:'L', masks : [0x4460, 0x0e80, 0x6220, 0x02e0], clock : 0, color : 'orange'     , r : -2, c: 4, rLast: null, cLast : null },
+    { name:'S', masks : [0x0360, 0x2310, 0x0360, 0x2310], clock : 0, color : 'lawngreen'  , r : -2, c: 4, rLast: null, cLast : null },
+    { name:'Z', masks : [0x0c60, 0x2640, 0x0c60, 0x2640], clock : 0, color : 'red'        , r : -2, c: 4, rLast: null, cLast : null }],
 
   create: function(){
     let random = Math.random() * this.templates.length; 
@@ -49,14 +49,16 @@ var app = new Vue({
     intervalID: 0,
     intervalBase: 50,
     intervalFactor:10,
-    rowsClear:0,
 
-    tetromino: tetrominoFactory.create(),//necessary?  //new T(),
+    tetromino: tetrominoFactory.create(),
+    tetrominoNext: tetrominoFactory.create(),
     board: allCellsIn2D,
     rLast: 0,
     cLast: 0,
     score: 0,
-    paused:false
+    rowsCleared:0,
+    paused:false,
+    i:0
   },
 
   created: function () {
@@ -95,7 +97,7 @@ var app = new Vue({
 
         fulls.forEach(r=> {
           this.score += 10;
-          this.rowsClear += 1;
+          this.rowsCleared += 1;
           this.intervalFactor = this.intervalFactor - 0.25;
           console.log(this.intervalFactor)
           this.board.splice(this.board.indexOf(r), 1);
@@ -133,30 +135,28 @@ var app = new Vue({
     start: function () {
       allCellsIn2D.forEach(r=>r.forEach(i=>  i.clear() ));  
       if (this.intervalID > 0) clearInterval(this.intervalID);
-      var that = this;
-
-      let i=1;
-
-      this.intervalID = setInterval(function () {
-        if(i++ % that.intervalFactor != 0) return;  
-
-        if(that.paused) return;
-
-        if (that.gameOver) {
-            console.log("Game Over!");
-            //location.reload();
-          clearInterval(that.intervalID);
+      this.i=1;
+      
+      this.intervalID = setInterval(this.step, this.intervalBase)
+    },
+    step: function(i){
+        if(this.i++ % this.intervalFactor != 0) return;  
+        if(this.paused) return;
+        if (this.gameOver) {
+          console.log("Game Over!");
+          clearInterval(this.intervalID);
           return;
         };
 
-        if (that.canFall)    that.fall();
+        if (this.canFall)    this.fall();
         else {
-          that.freezeTetromino();
-          that.tetromino = tetrominoFactory.create(); //new T();
-          that.checkRowFull();
-          that.score += 7;
+          this.freezeTetromino();
+          this.tetromino = this.tetrominoNext; //tetrominoFactory.create(); 
+          this.tetrominoNext = tetrominoFactory.create();
+    
+          this.checkRowFull();
+          this.score += 7;
         }
-      }, that.intervalBase)
     },
 
     draw: function () {
@@ -179,9 +179,7 @@ var app = new Vue({
       //other values are not touched
       //shared by draw, setUsed(3,2,1)
       //and undraw      setUsed(3,2,0)
-      var maskNumber = this.tetromino.shape();
-      var binary16 = ('0000000000000000' +maskNumber.toString(2) ).slice(-16).split('');
-      var a44 = chunkArray(binary16,4);
+      var a44 = chunkArray(this.tetromino.binary16(),4);
       for(i = 0; i<4;i++){
         var r2 = r+i;
         if(r2 < 0 || r2 >totalRows -1) continue;

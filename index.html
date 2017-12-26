@@ -4,38 +4,40 @@
   <title>Tetris in VUE</title>
   <meta charset="utf-8" />
   <style>
-    /*.used {
-      background-color: darkblue;
-    }
-
-    .row {
-      background-color: white;font-size:0px
-    }*/
-
-    #app div div {
-      margin: 0px;
-      border: 1px solid black;
+    .container { margin:0 auto 0 auto; width:370px; border: 1px solid black}
+    .row{ padding: 0%; margin: 0%;height:33px }
+    .row div {
+      padding: 0px;margin: 0px;
+      border: 2px inset #eee;
       display: inline-block;
-      height: 30px;
-      width: 30px;
+      height: 33px;
+      width: 33px;
     }
   </style> 
 </head>
 <body>
-  <h1>Tetris in Vue.js  </h1> 
-  <div id="app" style="float:left">
-     <img id="gameOver" src="http://vignette4.wikia.nocookie.net/evil/images/5/52/Game_Over.jpg/revision/latest?cb=20151207180809" height="200" width="500" style="display:none;" />
-    <button v-on:click="start">Start</button>
-    <button v-on:click="toogle">{{paused?"Paused":"Running"}}</button>
-    Score: <span>{{score}} </span>   Rows: <span>{{rowsClear}}</span>
-    <div v-for="(row, ri) in board" class="row">
-      <!--{{ri==0 && ci!=0?ci:null}}{{ci==0?ri:null}} why?-->
-      <div v-for="(cell,ci) in row" v-bind:class="{used:cell.used>0}" v-bind:style="{backgroundColor:cell.color}"></div>
+  <h1>Tetris in Vue.js  </h1>  
+  <div id="app" >
+    <div v-for="r in tetrominoNext.array44()" class="row" >
+      <div v-for="c in r" 
+      v-bind:style="{ 'background-color': c=='1'?tetrominoNext.color:'white' }" ></div> 
     </div>
-    <pre>{{tetromino||JSON.stringify(tetromino)}} </pre>
+    <div class="container">
+      <img id="gameOver" src="http://vignette4.wikia.nocookie.net/evil/images/5/52/Game_Over.jpg/revision/latest?cb=20151207180809" height="200" width="500" style="display:none;" />
+      <button v-on:click="start">Start</button>
+      <button v-on:click="toogle">{{paused?"Paused":"Running"}}</button>
+      Score: <span>{{score}} </span> Cleared Rows: <span>{{rowsCleared}}</span> 
+    
+      <div v-for="(row, ri) in board" class="row">
+        <div v-for="(cell,ci) in row" v-bind:class="{used:cell.used>0}" v-bind:style="{backgroundColor:cell.color}"></div>
+      </div>
+      <br/>
+
+      <pre>{{tetromino}} </pre>
+    </div>
   </div>
   
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.1.6/vue.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/vue/2.5.13/vue.js"></script>
   <script src="Tetris.js"></script>
   
 </body>
